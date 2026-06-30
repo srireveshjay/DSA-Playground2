@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Structure Lab — build, move, understand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e14;
+    --surface:#11161f;
+    --surface-2:#171d29;
+    --line:#232b3a;
+    --mint:#7cffb2;
+    --amber:#ffb454;
+    --coral:#ff7b72;
+    --text:#e6e1cf;
+    --dim:#7c8696;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'JetBrains Mono', monospace;
+    min-height:100vh;
+  }
+  h1,h2,h3,.display{font-family:'Space Grotesk', sans-serif;}
+
+  /* HERO */
+  .hero{
+    padding:64px 24px 32px;
+    text-align:center;
+    border-bottom:1px solid var(--line);
+    background:
+      radial-gradient(ellipse at 50% -20%, rgba(124,255,178,0.08), transparent 60%);
+  }
+  .eyebrow{
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    font-size:11px;
+    color:var(--mint);
+    margin-bottom:14px;
+  }
+  .hero h1{
+    font-size:clamp(28px,5vw,48px);
+    margin:0 0 10px;
+    font-weight:700;
+  }
+  .hero p{
+    color:var(--dim);
+    max-width:560px;
+    margin:0 auto;
+    font-size:14px;
+    line-height:1.6;
+  }
+
+  /* LAYOUT */
+  .wrap{max-width:1080px; margin:0 auto; padding:32px 20px 100px;}
+
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:22px 24px;
+    margin-bottom:24px;
+  }
+  .panel h2{
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.12em;
+    color:var(--dim);
+    margin:0 0 18px;
+  }
+
+  .controls-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:18px;
+    align-items:flex-end;
+  }
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field label{font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em;}
+  .field input, .field select{
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:9px 10px;
+    border-radius:6px;
+    font-family:inherit;
+    font-size:13px;
+    width:120px;
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--mint); outline-offset:1px;}
+
+  .structure-tabs{display:flex; gap:8px; flex-wrap:wrap;}
+  .tab-btn{
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    color:var(--dim);
+    padding:9px 16px;
+    border-radius:20px;
+    cursor:pointer;
+    font-family:inherit;
+    font-size:12.5px;
+    transition:all .15s;
+  }
+  .tab-btn.active{
+    border-color:var(--mint);
+    color:var(--mint);
+    background:rgba(124,255,178,0.08);
+  }
+  .tab-btn:hover{color:var(--text);}
+
+  .impl-toggle{display:none; gap:8px; margin-top:4px;}
+  .impl-toggle.show{display:flex;}
+
+  .btn{
+    background:var(--mint);
+    color:#06140c;
+    border:none;
+    padding:10px 22px;
+    border-radius:6px;
+    font-family:inherit;
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+    transition:transform .1s, box-shadow .1s;
+  }
+  .btn:hover{transform:translateY(-1px); box-shadow:0 4px 14px rgba(124,255,178,0.25);}
+  .btn:active{transform:translateY(0);}
+  .btn.secondary{
+    background:transparent;
+    color:var(--text);
+    border:1px solid var(--line);
+    font-weight:500;
+  }
+  .btn.secondary:hover{border-color:var(--mint); color:var(--mint); box-shadow:none;}
+  .btn:disabled{opacity:.35; cursor:not-allowed; transform:none; box-shadow:none;}
+
+  /* STAGE */
+  .stage-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
+  .status{font-size:12px; color:var(--dim); min-height:18px;}
+  .status .hl{color:var(--amber);}
+
+  .rail{
+    min-height:170px;
+    background:var(--surface-2);
+    border:1px dashed var(--line);
+    border-radius:10px;
+    padding:30px 20px;
+    display:flex;
+    align-items:flex-end;
+    gap:10px;
+    overflow-x:auto;
+    position:relative;
+  }
+  .baseline{
+    position:absolute;
+    left:20px; right:20px; bottom:54px;
+    height:1px;
+    background:var(--line);
+  }
+
+  .slot{
+    flex:0 0 64px;
+    width:64px;
+    height:64px;
+    border:1.5px dashed var(--line);
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    color:var(--dim);
+    font-size:11px;
+    transition:border-color .15s, background .15s;
+  }
+  .slot.targetable{border-color:var(--amber); box-shadow:0 0 0 2px rgba(255,180,84,0.15) inset;}
+
+  .idx{
+    position:absolute;
+    bottom:-22px;
+    font-size:10px;
+    color:var(--dim);
+    left:50%;
+    transform:translateX(-50%);
+  }
+
+  .cell{
+    width:64px;
+    height:64px;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    font-size:18px;
+    cursor:pointer;
+    user-select:none;
+    background:linear-gradient(160deg, #1c2533, #131923);
+    border:1.5px solid var(--line);
+    color:var(--text);
+    transition:transform .18s ease, border-color .15s, box-shadow .15s, opacity .2s;
+    position:relative;
+  }
+  .cell:hover{border-color:var(--mint);}
+  .cell.selected{
+    border-color:var(--mint);
+    box-shadow:0 0 0 3px rgba(124,255,178,0.18), 0 6px 18px rgba(124,255,178,0.18);
+    transform:translateY(-6px);
+  }
+  .cell.locked{opacity:.4; cursor:not-allowed;}
+  .cell.locked:hover{border-color:var(--line);}
+  .cell.pointer-tag::after{
+    content:attr(data-tag);
+    position:absolute;
+    top:-20px;
+    font-size:9.5px;
+    letter-spacing:.08em;
+    color:var(--amber);
+    text-transform:uppercase;
+  }
+  @keyframes spawn{
+    0%{opacity:0; transform:translateY(-26px) scale(.7);}
+    60%{opacity:1; transform:translateY(4px) scale(1.04);}
+    100%{opacity:1; transform:translateY(0) scale(1);}
+  }
+  .cell.spawn{animation:spawn .42s cubic-bezier(.2,.9,.3,1.2);}
+
+  .arrow{
+    color:var(--dim);
+    font-size:18px;
+    align-self:center;
+    flex:0 0 auto;
+    margin-bottom:0;
+  }
+
+  .gap-add{
+    flex:0 0 30px;
+    height:64px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .gap-add button{
+    width:22px; height:22px;
+    border-radius:50%;
+    border:1px dashed var(--dim);
+    background:transparent;
+    color:var(--dim);
+    font-size:13px;
+    cursor:pointer;
+    line-height:1;
+    padding:0;
+  }
+  .gap-add button:hover{border-color:var(--mint); color:var(--mint);}
+
+  .rail-foot{display:flex; justify-content:space-between; align-items:center; margin-top:30px; flex-wrap:wrap; gap:10px;}
+  .plus-end{display:flex; align-items:center; gap:8px;}
+
+  .legend{
+    display:flex; gap:18px; flex-wrap:wrap; margin-top:14px; font-size:11px; color:var(--dim);
+  }
+  .legend span.dot{display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:6px; vertical-align:middle;}
+  .legend .mint{background:var(--mint);}
+  .legend .amber{background:var(--amber);}
+
+  footer{text-align:center; color:var(--dim); font-size:11px; padding:30px 20px; border-top:1px solid var(--line);}
+  footer a{color:var(--mint); text-decoration:none;}
+
+  @media (max-width:560px){
+    .field input,.field select{width:100px;}
+    .cell,.slot{width:50px; height:50px; font-size:15px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="eyebrow">Structure Lab</div>
+  <h1>Cells that behave like the structures they live in.</h1>
+  <p>Pick a structure, generate a set of numbered cells, then rearrange them yourself — one move at a time — and feel why arrays, linked lists, stacks and queues each play by different rules.</p>
+</div>
+
+<div class="wrap">
+
+  <div class="panel">
+    <h2>1 · Configure</h2>
+    <div class="controls-row">
+      <div class="field">
+        <label for="count">Number of cells</label>
+        <input type="number" id="count" min="1" max="14" value="6">
+      </div>
+      <div class="field">
+        <label for="rmin">Range min</label>
+        <input type="number" id="rmin" value="1">
+      </div>
+      <div class="field">
+        <label for="rmax">Range max</label>
+        <input type="number" id="rmax" value="99">
+      </div>
+      <div class="field">
+        <label>Structure</label>
+        <div class="structure-tabs" id="structureTabs">
+          <button class="tab-btn active" data-s="array">Array</button>
+          <button class="tab-btn" data-s="linked">Linked List</button>
+          <button class="tab-btn" data-s="stack">Stack</button>
+          <button class="tab-btn" data-s="queue">Queue</button>
+        </div>
+      </div>
+      <div class="field impl-toggle" id="implToggle">
+        <label>Implementation</label>
+        <div class="structure-tabs" id="implTabs">
+          <button class="tab-btn active" data-i="array">via Array</button>
+          <button class="tab-btn" data-i="linked">via Linked List</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button class="btn" id="genBtn">Generate</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="stage-head">
+      <h2 style="margin:0;">2 · Arrange</h2>
+      <div class="status" id="status">Generate a set to begin.</div>
+    </div>
+
+    <div class="rail" id="rail">
+      <div class="baseline"></div>
+    </div>
+
+    <div class="rail-foot">
+      <div class="plus-end" id="plusEndWrap" style="display:none;">
+        <button class="btn secondary" id="plusEnd">+ blank slot</button>
+      </div>
+      <div class="legend" id="legend"></div>
+    </div>
+  </div>
+
+  <footer>
+    Built for understanding, not memorizing. Select a cell, then select where it goes — every move happens one cell at a time. · <a href="https://docs.claude.com" target="_blank">Made with Claude</a>
+  </footer>
+</div>
+
+<script>
+const state = {
+  structure: 'array',
+  impl: 'array',
+  cells: [],      // {id, value}
+  slots: [],      // for array: array of cell ids or null
+  selected: null, // index or id selected for move
+};
+let idCounter = 0;
+
+const railEl = document.getElementById('rail');
+const statusEl = document.getElementById('status');
+const legendEl = document.getElementById('legend');
+const plusEndWrap = document.getElementById('plusEndWrap');
+const plusEndBtn = document.getElementById('plusEnd');
+const implToggle = document.getElementById('implToggle');
+
+document.querySelectorAll('#structureTabs .tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#structureTabs .tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.structure = btn.dataset.s;
+    implToggle.classList.toggle('show', state.structure==='stack' || state.structure==='queue');
+    setStatus('Structure set to ' + labelFor(state.structure) + '. Generate to build it.');
+  });
+});
+document.querySelectorAll('#implTabs .tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#implTabs .tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.impl = btn.dataset.i;
+  });
+});
+
+function labelFor(s){
+  return {array:'Array', linked:'Linked List', stack:'Stack', queue:'Queue'}[s];
+}
+function setStatus(msg, hl){
+  statusEl.innerHTML = hl ? msg.replace(hl, '<span class="hl">'+hl+'</span>') : msg;
+}
+
+document.getElementById('genBtn').addEventListener('click', generate);
+plusEndBtn.addEventListener('click', addBlankSlot);
+
+function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+function generate(){
+  const count = Math.max(1, Math.min(14, parseInt(document.getElementById('count').value)||6));
+  let min = parseInt(document.getElementById('rmin').value);
+  let max = parseInt(document.getElementById('rmax').value);
+  if(isNaN(min)) min=1; if(isNaN(max)) max=99;
+  if(min>max){ [min,max]=[max,min]; }
+
+  state.cells = [];
+  state.slots = [];
+  state.selected = null;
+  idCounter = 0;
+
+  const values = [];
+  for(let i=0;i<count;i++) values.push(randInt(min,max));
+
+  railEl.innerHTML = '<div class="baseline"></div>';
+  plusEndWrap.style.display = (state.structure==='array') ? 'flex' : 'none';
+
+  // build slots/dom progressively
+  values.forEach((v,i)=>{
+    setTimeout(()=>{
+      const cellId = 'c'+(idCounter++);
+      state.cells.push({id:cellId, value:v});
+      if(state.structure==='array'){
+        state.slots.push(cellId);
+      }
+      render();
+      const el = document.querySelector(`[data-id="${cellId}"]`);
+      if(el){ el.classList.add('spawn'); }
+    }, i*220);
+  });
+
+  setTimeout(()=>{
+    setStatus(modeHint());
+  }, values.length*220 + 100);
+}
+
+function modeHint(){
+  switch(state.structure){
+    case 'array': return 'Select a cell, then select another to swap. Use + blank slot to grow capacity — nothing can be inserted between existing cells.';
+    case 'linked': return 'Select a cell, then a gap (between nodes) to move it there. Nodes can be relinked anywhere — that\'s the point of a linked list.';
+    case 'stack': return 'Only the top cell can move. Stacks are last in, first out.';
+    case 'queue': return 'Only the front cell may leave, only the back may receive. Queues are first in, first out.';
+  }
+}
+
+function render(){
+  railEl.innerHTML = '<div class="baseline"></div>';
+  legendEl.innerHTML = '';
+
+  if(state.structure==='array') renderArray();
+  else if(state.structure==='linked') renderLinked();
+  else if(state.structure==='stack') renderStack();
+  else if(state.structure==='queue') renderQueue();
+}
+
+function makeCellEl(cellId, opts={}){
+  const cell = state.cells.find(c=>c.id===cellId);
+  const div = document.createElement('div');
+  div.className = 'cell' + (opts.locked?' locked':'') + (opts.tag?' pointer-tag':'');
+  div.dataset.id = cellId;
+  div.textContent = cell.value;
+  if(opts.tag) div.dataset.tag = opts.tag;
+  if(state.selected===cellId) div.classList.add('selected');
+  if(!opts.locked){
+    div.addEventListener('click', ()=> onCellClick(cellId));
+  }
+  return div;
+}
+
+/* ---------- ARRAY ---------- */
+function renderArray(){
+  plusEndWrap.style.display = 'flex';
+  state.slots.forEach((cellId, i)=>{
+    const slot = document.createElement('div');
+    slot.className = 'slot';
+    if(state.selected!==null && cellId===null) slot.classList.add('targetable');
+    if(cellId===null){
+      slot.addEventListener('click', ()=> onSlotClick(i));
+    } else {
+      slot.style.border='none'; slot.style.padding='0';
+      const cellEl = makeCellEl(cellId);
+      slot.appendChild(cellEl);
+    }
+    const idx = document.createElement('div');
+    idx.className='idx'; idx.textContent = i;
+    slot.appendChild(idx);
+    railEl.appendChild(slot);
+  });
+  legendEl.innerHTML = '<span><span class="dot mint"></span>selected cell</span><span><span class="dot amber"></span>valid swap target</span>';
+}
+
+function addBlankSlot(){
+  if(state.structure!=='array') return;
+  state.slots.push(null);
+  render();
+  setStatus('Blank slot added at index ' + (state.slots.length-1) + '.');
+}
+
+function onSlotClick(i){
+  if(state.structure!=='array') return;
+  if(state.selected===null) return;
+  const fromIdx = state.slots.indexOf(state.selected);
+  if(fromIdx===-1) return;
+  state.slots[i] = state.selected;
+  state.slots[fromIdx] = null;
+  state.selected = null;
+  render();
+  setStatus('Moved cell to index ' + i + '.');
+}
+
+/* ---------- generic click handler for array/linked cells ---------- */
+function onCellClick(cellId){
+  if(state.structure==='array'){
+    if(state.selected===cellId){ state.selected=null; render(); return; }
+    if(state.selected===null){
+      state.selected = cellId;
+      render();
+      setStatus('Cell selected. Click another cell to swap, or a blank slot to move it there.');
+      return;
+    }
+    // swap two cells
+    const a = state.slots.indexOf(state.selected);
+    const b = state.slots.indexOf(cellId);
+    state.slots[a] = cellId;
+    state.slots[b] = state.selected;
+    state.selected = null;
+    render();
+    setStatus('Swapped two cells.');
+  } else if(state.structure==='linked'){
+    if(state.selected===cellId){ state.selected=null; render(); return; }
+    state.selected = cellId;
+    render();
+    setStatus('Cell selected. Click a gap (+) to relink it there.');
+  }
+}
+
+/* ---------- LINKED LIST ---------- */
+function renderLinked(){
+  plusEndWrap.style.display='none';
+  const order = state.cells.map(c=>c.id);
+  // gap before first
+  railEl.appendChild(makeGap(0));
+  order.forEach((cellId, i)=>{
+    const cellEl = makeCellEl(cellId, {tag: i===0?'head':(i===order.length-1?'tail':'')});
+    railEl.appendChild(cellEl);
+    if(i<order.length-1){
+      const arrow = document.createElement('div');
+      arrow.className='arrow'; arrow.textContent='→';
+      railEl.appendChild(arrow);
+    }
+    railEl.appendChild(makeGap(i+1));
+  });
+  legendEl.innerHTML = '<span><span class="dot mint"></span>selected node</span><span><span class="dot amber"></span>insertion point</span>';
+}
+
+function makeGap(pos){
+  const wrap = document.createElement('div');
+  wrap.className='gap-add';
+  const btn = document.createElement('button');
+  btn.textContent='+';
+  if(state.selected!==null){
+    btn.style.borderColor='var(--amber)'; btn.style.color='var(--amber)';
+  }
+  btn.addEventListener('click', ()=> onGapClick(pos));
+  wrap.appendChild(btn);
+  return wrap;
+}
+
+function onGapClick(pos){
+  if(state.selected!==null){
+    // move selected node to this position
+    const order = state.cells.map(c=>c.id);
+    const fromIdx = order.indexOf(state.selected);
+    if(fromIdx===-1) return;
+    const [moved] = state.cells.splice(fromIdx,1);
+    let insertAt = pos;
+    if(fromIdx < pos) insertAt -= 1;
+    state.cells.splice(insertAt,0,moved);
+    state.selected = null;
+    render();
+    setStatus('Node relinked at position ' + insertAt + '.');
+  } else {
+    const val = prompt('Value for new node:');
+    if(val===null || val.trim()==='') return;
+    const n = parseInt(val);
+    if(isNaN(n)) return;
+    const cellId = 'c'+(idCounter++);
+    state.cells.splice(pos,0,{id:cellId, value:n});
+    render();
+    const el = document.querySelector(`[data-id="${cellId}"]`);
+    if(el) el.classList.add('spawn');
+    setStatus('Inserted new node at position ' + pos + '. Linked lists allow insertion anywhere.');
+  }
+}
+
+/* ---------- STACK ---------- */
+function renderStack(){
+  plusEndWrap.style.display='none';
+  legendEl.innerHTML = '<span><span class="dot mint"></span>top — push / pop only here</span>';
+  if(state.impl==='linked'){
+    // head = top, draw left to right with arrows, top first
+    const order = [...state.cells].reverse();
+    order.forEach((c,i)=>{
+      const locked = i!==0;
+      const el = makeCellEl(c.id, {locked, tag: i===0?'top':''});
+      railEl.appendChild(el);
+      if(i<order.length-1){
+        const arrow=document.createElement('div'); arrow.className='arrow'; arrow.textContent='→';
+        railEl.appendChild(arrow);
+      }
+    });
+    addStackQueueControls('stack-linked');
+  } else {
+    state.cells.forEach((c,i)=>{
+      const locked = i!==state.cells.length-1;
+      const el = makeCellEl(c.id, {locked, tag: i===state.cells.length-1?'top':''});
+      railEl.appendChild(el);
+      const idxEl=document.createElement('div'); // wrap idx under via relative position trick
+    });
+    addStackQueueControls('stack-array');
+  }
+}
+
+/* ---------- QUEUE ---------- */
+function renderQueue(){
+  plusEndWrap.style.display='none';
+  legendEl.innerHTML = '<span><span class="dot mint"></span>front — dequeue here</span><span><span class="dot amber"></span>back — enqueue here</span>';
+  state.cells.forEach((c,i)=>{
+    const locked = !(i===0 || i===state.cells.length-1);
+    let tag = '';
+    if(i===0) tag='front';
+    if(i===state.cells.length-1 && state.cells.length>1) tag='back';
+    if(i===0 && state.cells.length===1) tag='front · back';
+    const el = makeCellEl(c.id, {locked, tag});
+    railEl.appendChild(el);
+    if(i<state.cells.length-1 && state.impl==='linked'){
+      const arrow=document.createElement('div'); arrow.className='arrow'; arrow.textContent='→';
+      railEl.appendChild(arrow);
+    }
+  });
+  addStackQueueControls('queue');
+}
+
+function addStackQueueControls(kind){
+  const wrap = document.createElement('div');
+  wrap.style.display='flex';
+  wrap.style.gap='10px';
+  wrap.style.marginLeft='16px';
+  wrap.style.alignSelf='center';
+
+  if(kind.startsWith('stack')){
+    const pushBtn=document.createElement('button');
+    pushBtn.className='btn secondary'; pushBtn.textContent='Push';
+    pushBtn.addEventListener('click', ()=>{
+      const min=parseInt(document.getElementById('rmin').value)||1;
+      const max=parseInt(document.getElementById('rmax').value)||99;
+      const v=randInt(min,max);
+      const cellId='c'+(idCounter++);
+      state.cells.push({id:cellId,value:v});
+      render();
+      const el=document.querySelector(`[data-id="${cellId}"]`);
+      if(el) el.classList.add('spawn');
+      setStatus('Pushed ' + v + ' onto the stack.');
+    });
+    const popBtn=document.createElement('button');
+    popBtn.className='btn secondary'; popBtn.textContent='Pop';
+    popBtn.addEventListener('click', ()=>{
+      if(state.cells.length===0) return;
+      const c = state.cells.pop();
+      render();
+      setStatus('Popped ' + c.value + ' off the stack.');
+    });
+    wrap.appendChild(pushBtn); wrap.appendChild(popBtn);
+  } else {
+    const enqBtn=document.createElement('button');
+    enqBtn.className='btn secondary'; enqBtn.textContent='Enqueue';
+    enqBtn.addEventListener('click', ()=>{
+      const min=parseInt(document.getElementById('rmin').value)||1;
+      const max=parseInt(document.getElementById('rmax').value)||99;
+      const v=randInt(min,max);
+      const cellId='c'+(idCounter++);
+      state.cells.push({id:cellId,value:v});
+      render();
+      const el=document.querySelector(`[data-id="${cellId}"]`);
+      if(el) el.classList.add('spawn');
+      setStatus('Enqueued ' + v + ' at the back.');
+    });
+    const deqBtn=document.createElement('button');
+    deqBtn.className='btn secondary'; deqBtn.textContent='Dequeue';
+    deqBtn.addEventListener('click', ()=>{
+      if(state.cells.length===0) return;
+      const c = state.cells.shift();
+      render();
+      setStatus('Dequeued ' + c.value + ' from the front.');
+    });
+    wrap.appendChild(enqBtn); wrap.appendChild(deqBtn);
+  }
+  railEl.appendChild(wrap);
+}
+</script>
+</body>
+</html>
